@@ -1,0 +1,682 @@
+---
+title: Investigating Rater Agreement with Skewed Data
+author: Geetansh Saxena & Madhavi Sen
+output: html_document
+params:
+  start_date: '2023-11-01'
+  end_date: '2024-02-01'
+---
+
+
+
+Loading necessary libraries
+```{r}
+library(irr)
+library(irrCAC)
+library(dplyr)
+```
+
+
+```{r}
+source("./utils.R")
+```
+
+Create a matrix of binary ratings with missing values
+Each row represents an object and each column represents a rater
+```{r}
+binary_ratings_matrix <- matrix(
+  c(
+    1, 0, 1, 1,   # Object 1: Rater 1, Rater 2, Rater 3, Rater 4
+    0, 1, NA, 0,  # Object 2: Rater 1, Rater 2, Rater 3, NA (missing value)
+    1, 1, 1, 1    # Object 3: Rater 1, Rater 2, Rater 3, Rater 4
+  ),
+  nrow = 3, ncol = 4, byrow = TRUE
+)
+binary_ratings_matrix
+```
+
+Imputing missing values in binary_ratings_matrix
+```{r}
+imputed_binary_ratings_matrix <- impute_missing_values_matrix(binary_ratings_matrix)
+imputed_binary_ratings_matrix
+```
+
+```{r}
+# Calculate Gwet's AC1
+ac1_result <- irrCAC::gwet.ac1.raw(imputed_binary_ratings_matrix)
+ac1_result
+```
+
+```{r}
+# Calculate Krippendorff's Alpha 
+alpha_result <- irr::kripp.alpha(imputed_binary_ratings_matrix)
+alpha_result
+```
+
+
+## CASE 1: Generating a random binary matrix with 100 subjects, 100 raters, and 20% missing data
+```{r}
+random_binary_matrix_100x100_missing_20 <- generate_random_binary_matrix(100, 100, 20)
+print(random_binary_matrix_100x100_missing_20)
+```
+
+Imputing missing values to the random_binary_matrix_100x100_missing_20
+```{r}
+imputed_random_binary_matrix_100x100_missing_20 <- impute_missing_values_matrix(random_binary_matrix_100x100_missing_20)
+print(imputed_random_binary_matrix_100x100_missing_20)
+
+```
+Calculating alpha on random_binary_matrix_100x100_missing_20
+```{r}
+alpha_random_binary_matrix_100x100_missing_20 <- irr::kripp.alpha(random_binary_matrix_100x100_missing_20)
+alpha_random_binary_matrix_100x100_missing_20
+```
+
+
+## Calculating Kripps alpha on imputed_random_binary_matrix_100x100_missing_20
+
+```{r}
+alpha_imputed_random_binary_matrix_100x100_missing_20 <- irr::kripp.alpha(imputed_random_binary_matrix_100x100_missing_20)
+print(alpha_imputed_random_binary_matrix_100x100_missing_20)
+```
+
+
+## Calculating Gwets AC1 on imputed_random_binary_matrix_100x100_missing_20
+ 
+```{r}
+ac1_coefficient_imputed_random_binary_matrix_100x100_missing_20 <- irrCAC::gwet.ac1.raw(imputed_random_binary_matrix_100x100_missing_20)
+
+ac1_coefficient_imputed_random_binary_matrix_100x100_missing_20
+
+```
+
+
+# CASE 2: Generating a random binary matrix with 100 subjects, 100 raters, and 80% missing data
+
+```{r}
+
+random_binary_matrix_100x100_missing_80 <- generate_random_binary_matrix(100, 100, 80)
+print(random_binary_matrix_100x100_missing_80)
+
+```
+
+
+
+
+```{r}
+
+imputed_random_binary_matrix_100x100_missing_80 <- impute_missing_values_matrix(random_binary_matrix_100x100_missing_80)
+print(imputed_random_binary_matrix_100x100_missing_80)
+ 
+```
+
+
+## Calculating alpha on random_binary_matrix_100x100_missing_80
+
+
+```{r}
+alpha_random_binary_matrix_100x100_missing_80 <- irr::kripp.alpha(random_binary_matrix_100x100_missing_80)
+print(alpha_random_binary_matrix_100x100_missing_80)
+```
+
+
+
+## Calculating alpha on imputed_random_binary_matrix_100x100_missing_80
+
+
+```{r}
+alpha_imputed_random_binary_matrix_100x100_missing_80 <- irr::kripp.alpha(imputed_random_binary_matrix_100x100_missing_80)
+print(alpha_imputed_random_binary_matrix_100x100_missing_80)
+```
+## Calculating ac1 on imputed_random_binary_matrix_100x100_missing_80
+```{r}
+ac1_coefficient_imputed_random_binary_matrix_100x100_missing_80 <- irrCAC::gwet.ac1.raw(imputed_random_binary_matrix_100x100_missing_80)
+
+ac1_coefficient_imputed_random_binary_matrix_100x100_missing_80
+
+```
+# Comparison of case 1 and case 2
+
+```{r}
+simple_comparison <- data.frame(
+  Case = c("1", "2"),
+  'Missing Data' = c(20, 80),
+  Alpha = c(alpha_random_binary_matrix_100x100_missing_20$value, alpha_random_binary_matrix_100x100_missing_80$value),
+  AC1 = c(ac1_coefficient_imputed_random_binary_matrix_100x100_missing_20$est$coeff.val,ac1_coefficient_imputed_random_binary_matrix_100x100_missing_80$est$coeff.val) 
+)
+simple_comparison
+
+```
+
+
+# Introducing bias
+
+
+# Simple case to check bias: Generating a random binary matrix with bias for Rater2
+# Parameters: 4 subjects, 3 raters, and 20% missing data
+
+```{r}
+
+bias_probabilities <- c(0.1, 0.3, 0.2)  # Adjust bias probabilities for each rater
+biased_random_matrix_missing_20 <- generate_random_binary_matrix_with_bias(4, 3, 20, bias_probabilities)
+print(biased_random_matrix_missing_20)
+```
+
+# Calculate Krippendorff's Alpha for the biased matrix (biased_random_matrix_missing_20)
+
+```{r}
+
+kripp_alpha_biased_random_matrix_missing_20 <- irr::kripp.alpha(biased_random_matrix_missing_20)
+kripp_alpha_biased_random_matrix_missing_20
+```
+
+
+# Impute missing values with mean and calculate Gwet's AC1
+
+```{r}
+
+imputed_biased_random_matrix_missing_20 <- impute_missing_values_matrix(biased_random_matrix_missing_20)
+
+gwet_ac1_imputed_biased_random_matrix_missing_20 <- irrCAC::gwet.ac1.raw(imputed_biased_random_matrix_missing_20)
+
+gwet_ac1_imputed_biased_random_matrix_missing_20
+
+```
+
+# The bias_probabilities_range parameter defines the minimum and maximum values for 
+# the uniform distribution from which these random bias probabilities are drawn.
+```{r}
+bias_probabilities_range <- c(0.2, 0.9)  # Adjust the range of bias probabilities
+```
+
+
+
+# Case 3: Generate a random binary matrix with randomly generated bias for 100 subjects, 100 raters, and 20% missing data
+```{r}
+
+randomly_generated_bias__binary_matrix_missing_20 <- generate_random_binary_matrix_with_random_bias(100, 100, 20, bias_probabilities_range)
+alpha_randomly_generated_bias__binary_matrix_missing_20 <- irr::kripp.alpha(randomly_generated_bias__binary_matrix_missing_20)
+alpha_random_binary_matrix_100x100_missing_20
+
+```
+
+
+
+
+```{r}
+imputed_randomly_generated_bias__binary_matrix_missing_20 <- impute_missing_values_matrix(randomly_generated_bias__binary_matrix_missing_20)
+
+ac1_imputed_randomly_generated_bias__binary_matrix_missing_20 <- irrCAC::gwet.ac1.raw(imputed_randomly_generated_bias__binary_matrix_missing_20)
+
+ac1_imputed_randomly_generated_bias__binary_matrix_missing_20
+
+```
+
+
+
+
+```{r}
+
+# Case 4: Generate a random binary matrix with randomly generated bias for 100 subjects, 100 raters and 80% missing data
+randomly_generated_bias__binary_matrix_missing_80 <- generate_random_binary_matrix_with_random_bias(100, 100, 80, bias_probabilities_range)
+
+alpha_randomly_generated_bias__binary_matrix_missing_80 <- irr::kripp.alpha(randomly_generated_bias__binary_matrix_missing_80)
+
+alpha_randomly_generated_bias__binary_matrix_missing_80
+```
+
+
+
+
+```{r}
+
+imputed_randomly_generated_bias__binary_matrix_missing_80 <- impute_missing_values_matrix(randomly_generated_bias__binary_matrix_missing_80)
+
+ac1_imputed_randomly_generated_bias__binary_matrix_missing_80 <- irrCAC::gwet.ac1.raw(imputed_randomly_generated_bias__binary_matrix_missing_80)
+
+ac1_imputed_randomly_generated_bias__binary_matrix_missing_80
+```
+
+
+
+
+```{r}
+
+################################################################################
+###################### Comparison of Cases 3 and 4 #############################
+################################################################################
+
+bias_comparison <- data.frame(
+  Case = c("3", "4"),
+  'Missing Data' = c(20, 80),
+  Alpha = c(alpha_randomly_generated_bias__binary_matrix_missing_20$value, alpha_randomly_generated_bias__binary_matrix_missing_80$value),
+  AC1 = c(ac1_imputed_randomly_generated_bias__binary_matrix_missing_20$est$coeff.val, ac1_imputed_randomly_generated_bias__binary_matrix_missing_80$est$coeff.val) 
+)
+
+bias_comparison
+
+
+```
+
+
+
+
+```{r}
+
+```
+
+
+
+
+```{r}
+
+```
+
+
+
+
+```{r}
+
+```
+
+
+
+
+```{r}
+
+```
+
+
+
+
+```{r}
+
+```
+
+
+
+
+```{r}
+
+```
+
+
+
+
+```{r}
+
+```
+
+
+
+
+```{r}
+
+```
+
+
+
+
+```{r}
+
+```
+
+
+
+
+```{r}
+
+```
+
+
+
+
+```{r}
+
+```
+
+
+
+
+```{r}
+
+```
+
+
+
+
+```{r}
+
+```
+
+
+
+
+```{r}
+
+```
+
+
+
+
+```{r}
+
+```
+
+
+
+
+```{r}
+
+```
+
+
+
+
+```{r}
+
+```
+
+
+
+
+```{r}
+
+```
+
+
+
+
+```{r}
+
+```
+
+
+
+
+```{r}
+
+```
+
+
+
+
+```{r}
+
+```
+
+
+
+
+```{r}
+
+```
+
+
+
+
+```{r}
+
+```
+
+
+
+
+```{r}
+
+```
+
+
+
+
+```{r}
+
+```
+
+
+
+
+```{r}
+
+```
+
+
+
+
+```{r}
+
+```
+
+
+
+
+```{r}
+
+```
+
+
+
+
+```{r}
+
+```
+
+
+
+
+```{r}
+
+```
+
+
+
+
+```{r}
+
+```
+
+
+
+
+```{r}
+
+```
+
+
+
+
+```{r}
+
+```
+
+
+
+
+```{r}
+
+```
+
+
+
+
+```{r}
+
+```
+
+
+
+
+```{r}
+
+```
+
+
+
+
+```{r}
+
+```
+
+
+
+
+```{r}
+
+```
+
+
+
+
+```{r}
+
+```
+
+
+
+
+```{r}
+
+```
+
+
+
+
+```{r}
+
+```
+
+
+
+
+```{r}
+
+```
+
+
+
+
+```{r}
+
+```
+
+
+
+
+```{r}
+
+```
+
+
+
+
+```{r}
+
+```
+
+
+
+
+```{r}
+
+```
+
+
+
+
+```{r}
+
+```
+
+
+
+
+```{r}
+
+```
+
+
+
+
+```{r}
+
+```
+
+
+
+
+```{r}
+
+```
+
+
+
+
+```{r}
+
+```
+
+
+
+
+```{r}
+
+```
+
+
+
+
+```{r}
+
+```
+
+
+
+
+```{r}
+
+```
+
+
+
+
+```{r}
+
+```
+
+
+
+
+```{r}
+
+```
+
+
+
+
+```{r}
+
+```
+
+
+
+
+```{r}
+
+```
+
+
+
+
+```{r}
+
+```
+
+
+
+
+```{r}
+
+```
+
+
+
